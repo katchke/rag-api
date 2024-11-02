@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get -y install tzdata git make openssl curl xz-utils file wget xsel vim\
     && dpkg-reconfigure -f noninteractive tzdata \
-    && apt-get -y install language-pack-ja \
+    && apt-get -y install locales \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
