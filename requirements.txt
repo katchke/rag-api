@@ -1,0 +1,8 @@
+Flask==3.0.0
+Flask-RESTful==0.3.10
+Flask-SQLAlchemy==3.0.0
+Flask-Injector==0.16
+SQLAlchemy==2.0.0
+alembic==1.11.0
+injector==0.20.0
+python-dotenv==1.0.0

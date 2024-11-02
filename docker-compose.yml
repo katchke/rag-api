@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  rag_api:
+    build:
+      context: .
+      dockerfile: "./docker/rag_api/Dockerfile"
+    image: rag/api
+    container_name: rag_api
+    ports:
+      - 4001:4001
+    env_file:
+      - ./.env
+    networks:
+      - shared-network
+  db:
+networks:
+  shared-network:
+    external: false
