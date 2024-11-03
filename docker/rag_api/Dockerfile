@@ -10,12 +10,11 @@ RUN apt-get update \
 
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
 
 # Set up Python
 RUN apt-get update \
     && apt-get -y install --no-install-recommends libsqlite3-dev libbz2-dev libncurses5-dev libgdbm-dev liblzma-dev libssl-dev tcl-dev tk-dev libreadline-dev libffi-dev \
-         libxcb-shm0-dev libxcb-xfixes0-dev libxcb1-dev libasound2 libSDL2-2.0 libva2 libva-drm2 libva-x11-2 libvdpau1 \
+         libxcb-shm0-dev libxcb-xfixes0-dev libpq-dev libxcb1-dev libasound2 libSDL2-2.0 libva2 libva-drm2 libva-x11-2 libvdpau1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
