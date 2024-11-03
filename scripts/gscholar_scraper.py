@@ -1,4 +1,5 @@
 from typing import Optional, Union
+import os
 import re
 import itertools
 import time
@@ -10,33 +11,11 @@ import bs4
 import retrying
 import PyPDF2
 
+import utils
+
 GSCHOLAR_URL = (
     "https://scholar.google.com/scholar?start={start}&q={query}&hl=en&as_sdt=0,5"
 )
-
-
-class ResearchPaper:
-    def __init__(
-        self,
-        title: str,
-        link: str,
-        citation_count: int,
-        authors: list[str],
-    ) -> None:
-        """
-        Initializes a new instance of the class.
-
-        Args:
-            title (str): The title of the scholarly article.
-            link (str): The URL link to the scholarly article.
-            citation_count (int): The number of citations the article has received.
-            authors (list[str]): A list of authors of the scholarly article.
-        """
-        self.title = title
-        self.link = link
-        self.citation_count = citation_count
-        self.authors = authors
-        self.content: Optional[str] = None
 
 
 class Scraper:
@@ -70,7 +49,7 @@ class Scraper:
 
 
 class PaperScraper(Scraper):
-    def __init__(self, papers: list[ResearchPaper]) -> None:
+    def __init__(self, papers: list[utils.ResearchPaper]) -> None:
         """
         Initializes the GScholarScraper with a list of research papers.
 
@@ -80,7 +59,7 @@ class PaperScraper(Scraper):
 
         self.papers = papers
 
-    def _fetch_paper_content(self, paper: ResearchPaper) -> ResearchPaper:
+    def _fetch_paper_content(self, paper: utils.ResearchPaper) -> utils.ResearchPaper:
         """
         Fetches the content of a research paper from its PDF link and updates the paper object with the extracted text.
 
@@ -97,11 +76,11 @@ class PaperScraper(Scraper):
             page = reader.pages[page_num]
             text += page.extract_text()
 
-        paper.content = text
+        paper.content = text.replace("\x00", "\uFFFD")
 
         return paper
 
-    def scrape(self, max_processes: Optional[int]) -> list[ResearchPaper]:
+    def scrape(self, max_processes: Optional[int]) -> list[utils.ResearchPaper]:
         """
         Scrapes the content of research papers using multiprocessing.
 
@@ -149,7 +128,7 @@ class GScholarScraper(Scraper):
         ]
         return urls
 
-    def _fetch_papers(self, url: str) -> list[ResearchPaper]:
+    def _fetch_papers(self, url: str) -> list[utils.ResearchPaper]:
         """
         Fetches research papers from the given URL.
         This method fetches the HTML content of the page at the specified URL,
@@ -187,10 +166,16 @@ class GScholarScraper(Scraper):
             # Not all papers have citation counts
             return 0
 
-    def __extract_authors(self, author: bs4.BeautifulSoup) -> list[str]:
-        return author.text.split("-")[0].split(",")
+    def __extract_authors(self, author: bs4.BeautifulSoup) -> str:
+        return ", ".join(
+            [
+                author.strip().replace("...", "")
+                for author in author.text.split("-")[0].split(",")
+                if len(author.strip().replace(".", "")) > 1
+            ]
+        )
 
-    def _parse_html(self, html: str) -> list[ResearchPaper]:
+    def _parse_html(self, html: str) -> list[utils.ResearchPaper]:
         """
         Parses the provided HTML content and extracts research paper details.
 
@@ -211,7 +196,7 @@ class GScholarScraper(Scraper):
         authors = list(map(self.__extract_authors, soup.find_all("div", class_="gs_a")))
 
         return [
-            ResearchPaper(
+            utils.ResearchPaper(
                 title=title,
                 link=link,
                 authors=authors_,
@@ -222,7 +207,7 @@ class GScholarScraper(Scraper):
             )
         ]
 
-    def scrape(self, max_processes: Optional[int]) -> list[ResearchPaper]:
+    def scrape(self, max_processes: Optional[int]) -> list[utils.ResearchPaper]:
         """
         Scrapes Google Scholar from the provided URLs using multiprocessing.
 
@@ -242,19 +227,36 @@ class GScholarScraper(Scraper):
 
 
 def main():
+    if not os.getenv("RUN_SCRAPER"):
+        print("Environment variable 'RUN_SCRAPER' is not set.")
+        print("Running the scraper...")
+    elif os.environ["RUN_SCRAPER"].lower() != "true":
+        print("Not running Google Scholar scraper.")
+        print('Set the environment variable "RUN_SCRAPER=true" to run the scraper.')
+        return
+
+    print("Running Google Scholar scraper...")
     QUERY = "lithium+ion"  # Query to search
-    PAGES = 2  # Number of pages to scrape
+    PAGES = 1  # Number of pages to scrape
     MAX_PROCESSES = 2  # Number of processes to use for scraping
+
+    DB_INSERT_CHUNK = 100
 
     QUERY = QUERY + "+site%3Aarxiv.org"  # Search only on arxiv
 
     # Scrape papers metadata from google scholar
+    print(f"Query: {QUERY}, Pages: {PAGES}")
     gscholar_scraper = GScholarScraper(query=QUERY, pages=PAGES)
     papers = gscholar_scraper.scrape(max_processes=MAX_PROCESSES)
+    print(f"Done fetching paper metadata. Found {len(papers)} papers.")
 
     # Scrape content of papers
-    paper_scraper = PaperScraper(papers)
-    scanned_papers = paper_scraper.scrape(max_processes=MAX_PROCESSES)
+    print("Scraping paper content...")
+
+    for i in range(0, len(papers), DB_INSERT_CHUNK):
+        paper_scraper = PaperScraper(papers[i : i + DB_INSERT_CHUNK])
+        scanned_papers = paper_scraper.scrape(max_processes=MAX_PROCESSES)
+        utils.insert_papers_to_db(scanned_papers)
 
 
 if __name__ == "__main__":
