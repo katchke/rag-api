@@ -55,7 +55,7 @@ def truncate_docs(doc: str) -> str:
 
 
 def create_embeddings(papers: list[utils.ResearchPaper]) -> list[list[float]]:
-    client = OpenAI()
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     docs = [
         truncate_docs(f"{paper.title} {paper.authors} {paper.content}")
@@ -86,6 +86,16 @@ def update_papers(
 
 
 def main():
+    if not os.getenv("RUN_EMBED_GEN"):
+        print("Environment variable 'RUN_EMBED_GEN' is not set.")
+        return
+    elif os.environ["RUN_EMBED_GEN"].lower() != "true":
+        print("Not running embedding generator.")
+        print(
+            'Set the environment variable "RUN_EMBED_GEN=true" to run the embedding generator.'
+        )
+        return
+
     DEBUG = True
     CHUNKSIZE = 2048
 

@@ -229,7 +229,7 @@ class GScholarScraper(Scraper):
 def main():
     if not os.getenv("RUN_SCRAPER"):
         print("Environment variable 'RUN_SCRAPER' is not set.")
-        print("Running the scraper...")
+        return
     elif os.environ["RUN_SCRAPER"].lower() != "true":
         print("Not running Google Scholar scraper.")
         print('Set the environment variable "RUN_SCRAPER=true" to run the scraper.')
