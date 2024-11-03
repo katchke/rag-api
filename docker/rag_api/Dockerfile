@@ -62,6 +62,7 @@ WORKDIR $APP_ROOT
 COPY --chown=$USERNAME:$GROUPNAME requirements.txt .
 RUN ~/.pyenv/shims/pip install --upgrade pip && \
     ~/.pyenv/shims/pip install --upgrade setuptools && \
+    curl --proto '=https' --tlsv1.3 https://sh.rustup.rs -sSf | sh -s -- -y && . "$HOME/.cargo/env" && \
     ~/.pyenv/shims/pip install -r requirements.txt
 COPY --chown=$USERNAME:$GROUPNAME . .
 ENV PYTHONPATH $APP_ROOT:$PYTHONPATH
