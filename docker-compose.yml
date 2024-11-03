@@ -4,20 +4,49 @@ services:
     build:
       context: .
       dockerfile: "./docker/rag_api/Dockerfile"
-    image: rag/api
+    image: rag_api
     container_name: rag_api
     ports:
       - 5001:5001
-    env_file:
-      - ./.env
-    networks:
-      - shared-network
-  db:
+    environment:
+      - POSTGRES_HOST=$POSTGRES_HOST
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_DB=$POSTGRES_DB
+      - GSCHOLAR_TABLE=$GSCHOLAR_TABLE
+
+  pgvector:
+    image: ankane/pgvector:v0.5.1
+    container_name: pgvector
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker/db/init.sh:/docker-entrypoint-initdb.d/init.sh
+      - ./data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_HOST=$POSTGRES_HOST
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_DB=$POSTGRES_DB
+      - GSCHOLAR_TABLE=$GSCHOLAR_TABLE
+
+  scraper:
     build:
-        context: ./docker/db
-        dockerfile: "Dockerfile"
-    env_file:
-      - ./.env
+      context: .
+      dockerfile: "./docker/rag_api/Dockerfile"
+    entrypoint: ["bash", "-c", "~/.pyenv/shims/python /workflow/scripts/gscholar_scraper.py"]
+    image: rag_api
+    container_name: scraper
+    volumes:
+      - ./scripts:/workflow/scripts
+    environment:
+      - RUN_SCRAPER=$RUN_SCRAPER
+      - POSTGRES_HOST=$POSTGRES_HOST
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_DB=$POSTGRES_DB
+      - GSCHOLAR_TABLE=$GSCHOLAR_TABLE
+
 networks:
   shared-network:
     external: false
