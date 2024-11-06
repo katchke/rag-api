@@ -50,11 +50,21 @@ def insert_papers_to_db(papers: list[ResearchPaper]):
     """
 
     # Prepare data for insertion
-    data = [
-        (paper.title, paper.link, paper.citation_count, paper.authors, chunk, i)
-        for paper in papers
-        for i, chunk in enumerate(paper.content.split("\n"))
-    ]
+    data = []
+    chunk_size = 1000
+
+    for paper in papers:
+        tokens = paper.content.split()
+        chunks = [
+            " ".join(tokens[i : i + chunk_size])
+            for i in range(0, len(tokens), chunk_size)
+        ]
+        data.extend(
+            [
+                (paper.title, paper.link, paper.citation_count, paper.authors, chunk, i)
+                for i, chunk in enumerate(chunks)
+            ]
+        )
 
     # Execute the insertion query and check if the commit was successful
     try:
