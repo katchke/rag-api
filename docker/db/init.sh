@@ -14,7 +14,7 @@ psql <<- EOSQL
         authors TEXT,
         content TEXT,
         embedding vector(1536),
-        PRIMARY KEY (link, chunk_no)
+        PRIMARY KEY (link, chunk_num)
     );
     GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;
 EOSQL
