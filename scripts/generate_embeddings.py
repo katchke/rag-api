@@ -4,7 +4,7 @@ from openai import OpenAI
 import psycopg2
 import tiktoken
 
-import utils
+import helper
 
 
 def create_db_cursor() -> tuple:
@@ -24,11 +24,11 @@ def create_db_cursor() -> tuple:
     return conn, cur
 
 
-def fetch_papers(cur, chunksize: int, debug: bool) -> list[utils.ResearchPaper]:
+def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]:
     cur_ = cur.fetchmany(chunksize) if not debug else cur.fetchmany(5)
 
     return [
-        utils.ResearchPaper(
+        helper.ResearchPaper(
             title=paper[0],
             link=paper[1],
             authors=paper[2],
@@ -50,7 +50,7 @@ def truncate_docs(doc: str) -> str:
         return doc[: doc.index(key)]
 
 
-def create_embeddings(papers: list[utils.ResearchPaper]) -> list[list[float]]:
+def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     docs = [
@@ -70,7 +70,7 @@ def create_embeddings(papers: list[utils.ResearchPaper]) -> list[list[float]]:
 
 
 def update_papers(
-    cur, papers: list[utils.ResearchPaper], embeds: list[list[float]]
+    cur, papers: list[helper.ResearchPaper], embeds: list[list[float]]
 ) -> None:
     TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
 

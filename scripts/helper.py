@@ -4,6 +4,8 @@ import os
 import psycopg2
 import psycopg2.extras
 
+import utils
+
 
 class ResearchPaper:
     def __init__(
@@ -12,16 +14,17 @@ class ResearchPaper:
         link: str,
         citation_count: int,
         authors: str,
-        content: Optional[str] = None,
+        content: str = "",
     ) -> None:
         """
         Initializes a new instance of the class.
 
         Args:
-            title (str): The title of the scholarly article.
-            link (str): The URL link to the scholarly article.
+            title (str): The title of the article.
+            link (str): The URL link to the article.
             citation_count (int): The number of citations the article has received.
-            authors (list[str]): A list of authors of the scholarly article.
+            authors (list[str]): A list of authors of the article.
+            content (str): The content of the article.
         """
         self.title = title
         self.link = link
@@ -30,24 +33,9 @@ class ResearchPaper:
         self.content = content
 
 
-def create_conn_string() -> str:
-    return (
-        "postgresql://"
-        "%(POSTGRES_USER)s:%(POSTGRES_PASSWORD)s"
-        "@%(POSTGRES_HOST)s:%(POSTGRES_PORT)s/"
-        "%(POSTGRES_DB)s"
-    ) % {
-        "POSTGRES_HOST": os.getenv("POSTGRES_HOST"),
-        "POSTGRES_PORT": 5432,
-        "POSTGRES_DB": os.getenv("POSTGRES_DB"),
-        "POSTGRES_USER": os.getenv("POSTGRES_USER"),
-        "POSTGRES_PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-    }
-
-
 def insert_papers_to_db(papers: list[ResearchPaper]):
     # Connect to the PostgreSQL database
-    conn = psycopg2.connect(create_conn_string())
+    conn = psycopg2.connect(utils.create_conn_string())
     cur = conn.cursor()
 
     TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
@@ -57,14 +45,15 @@ def insert_papers_to_db(papers: list[ResearchPaper]):
 
     # Insert scanned papers into the database
     insert_query = f"""
-    INSERT INTO {TABLE_NAME} (title, link, citation_count, authors, content)
+    INSERT INTO {TABLE_NAME} (title, link, citation_count, authors, content, chunk_num)
     VALUES %s;
     """
 
     # Prepare data for insertion
     data = [
-        (paper.title, paper.link, paper.citation_count, paper.authors, paper.content)
+        (paper.title, paper.link, paper.citation_count, paper.authors, chunk, i)
         for paper in papers
+        for i, chunk in paper.content.split("\n")
     ]
 
     # Execute the insertion query and check if the commit was successful

@@ -8,11 +8,13 @@ psql <<- EOSQL
     CREATE EXTENSION vector;
     CREATE TABLE $GSCHOLAR_TABLE (
         title TEXT,
-        link VARCHAR(2048) PRIMARY KEY,
+        link VARCHAR(2048),
+        chunk_num INT,
         citation_count INT,
         authors TEXT,
         content TEXT,
-        embedding vector(1536)
+        embedding vector(1536),
+        PRIMARY KEY (link, chunk_no)
     );
     GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;
 EOSQL
