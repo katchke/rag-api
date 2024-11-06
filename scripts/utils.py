@@ -30,19 +30,30 @@ class ResearchPaper:
         self.content = content
 
 
-def insert_papers_to_db(papers: list[ResearchPaper]):
-    # Database connection parameters
-    DB_HOST = os.getenv("POSTGRES_HOST")
-    DB_NAME = os.getenv("POSTGRES_DB")
-    TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
-    DB_USER = os.getenv("POSTGRES_USER")
-    DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+def create_conn_string() -> str:
+    return (
+        "postgresql://"
+        "%(POSTGRES_USER)s:%(POSTGRES_PASSWORD)s"
+        "@%(POSTGRES_HOST)s:%(POSTGRES_PORT)s/"
+        "%(POSTGRES_DB)s"
+    ) % {
+        "POSTGRES_HOST": os.getenv("POSTGRES_HOST"),
+        "POSTGRES_PORT": 5432,
+        "POSTGRES_DB": os.getenv("POSTGRES_DB"),
+        "POSTGRES_USER": os.getenv("POSTGRES_USER"),
+        "POSTGRES_PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+    }
 
+
+def insert_papers_to_db(papers: list[ResearchPaper]):
     # Connect to the PostgreSQL database
-    conn = psycopg2.connect(
-        host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD
-    )
+    conn = psycopg2.connect(create_conn_string())
     cur = conn.cursor()
+
+    TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
+
+    if not TABLE_NAME:
+        raise ValueError("Table name not found in environment variables")
 
     # Insert scanned papers into the database
     insert_query = f"""

@@ -8,18 +8,14 @@ import utils
 
 
 def create_db_cursor() -> tuple:
-    # Database connection parameters
-    DB_HOST = os.getenv("POSTGRES_HOST")
-    DB_NAME = os.getenv("POSTGRES_DB")
-    DB_USER = os.getenv("POSTGRES_USER")
-    DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+    # Connect to the PostgreSQL database
+    conn = psycopg2.connect(utils.create_conn_string())
+    cur = conn.cursor()
+
     TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
 
-    # Connect to the PostgreSQL database
-    conn = psycopg2.connect(
-        host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD
-    )
-    cur = conn.cursor()
+    if not TABLE_NAME:
+        raise ValueError("Table name not found in environment variables")
 
     cur.execute(
         f"SELECT title, link, authors, content, citation_count FROM {TABLE_NAME} ORDER BY citation_count DESC;"
@@ -68,7 +64,7 @@ def create_embeddings(papers: list[utils.ResearchPaper]) -> list[list[float]]:
         encoding_format="float",
     )
 
-    embeds = [d["embedding"] for d in resp["data"]]
+    embeds = [emb.embedding for emb in resp.data]
 
     return embeds
 
@@ -77,6 +73,9 @@ def update_papers(
     cur, papers: list[utils.ResearchPaper], embeds: list[list[float]]
 ) -> None:
     TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
+
+    if not TABLE_NAME:
+        raise ValueError("Table name not found in environment variables")
 
     for paper, embed in zip(papers, embeds):
         cur.execute(
