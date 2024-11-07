@@ -42,7 +42,7 @@ def insert_papers_to_db(papers: list[ResearchPaper]):
     # Insert scanned papers into the database
     insert_query = f"""
     INSERT INTO {TABLE_NAME} (title, link, authors, content, chunk_num)
-    VALUES %s;
+    VALUES %s ON CONFLICT (link, chunk_num) DO NOTHING;
     """
 
     # Prepare data for insertion

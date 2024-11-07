@@ -13,13 +13,13 @@ def create_db_cursor() -> tuple:
     conn = psycopg2.connect(utils.create_conn_string())
     cur = conn.cursor()
 
-    TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
+    TABLE_NAME = os.getenv("ARXIV_TABLE")
 
     if not TABLE_NAME:
         raise ValueError("Table name not found in environment variables")
 
     cur.execute(
-        f"SELECT title, link, authors, content, citation_count FROM {TABLE_NAME} ORDER BY citation_count DESC;"
+        f"SELECT title, link, authors, content FROM {TABLE_NAME} ORDER BY citation_count DESC;"
     )
 
     return conn, cur
@@ -30,11 +30,7 @@ def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]
 
     return [
         helper.ResearchPaper(
-            title=paper[0],
-            link=paper[1],
-            authors=paper[2],
-            content=paper[3],
-            citation_count=paper[4],
+            title=paper[0], link=paper[1], authors=paper[2], content=paper[3]
         )
         for paper in cur_
     ]
@@ -73,7 +69,7 @@ def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
 def update_papers(
     cur, papers: list[helper.ResearchPaper], embeds: list[list[float]]
 ) -> None:
-    TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
+    TABLE_NAME = os.getenv("ARXIV_TABLE")
 
     if not TABLE_NAME:
         raise ValueError("Table name not found in environment variables")
