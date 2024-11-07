@@ -1,4 +1,5 @@
 import os
+import time
 
 from openai import OpenAI
 import psycopg2
@@ -41,6 +42,8 @@ def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]
 
 
 def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
+    time.sleep(1)
+
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     docs = [f"{paper.title} {paper.authors} {paper.content}" for paper in papers]
