@@ -92,7 +92,7 @@ def main():
         )
         return
 
-    DEBUG = True
+    DEBUG = False
     CHUNKSIZE = 2048
 
     conn, cur = create_db_cursor()
