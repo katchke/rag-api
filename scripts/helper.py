@@ -53,6 +53,8 @@ def insert_papers_to_db(papers: list[ResearchPaper]):
         tokens = paper.content.split()
         chunks = [
             " ".join(tokens[i : i + chunk_size])
+            .encode("utf-8", "replace")
+            .decode("utf-8")
             for i in range(0, len(tokens), chunk_size)
         ]
         data.extend(
