@@ -6,11 +6,10 @@ psql <<- EOSQL
     CREATE DATABASE $POSTGRES_DB;
     \c $POSTGRES_DB
     CREATE EXTENSION vector;
-    CREATE TABLE $GSCHOLAR_TABLE (
+    CREATE TABLE $ARXIV_TABLE (
         title TEXT,
         link VARCHAR(2048),
         chunk_num INT,
-        citation_count INT,
         authors TEXT,
         content TEXT,
         embedding vector(1536),

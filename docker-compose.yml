@@ -15,7 +15,7 @@ services:
       - POSTGRES_USER=$POSTGRES_USER
       - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
       - POSTGRES_DB=$POSTGRES_DB
-      - GSCHOLAR_TABLE=$GSCHOLAR_TABLE
+      - ARXIV_TABLE=$ARXIV_TABLE
       - OPENAI_API_KEY=$OPENAI_API_KEY
     depends_on:
       - pgvector
@@ -33,13 +33,13 @@ services:
       - POSTGRES_USER=$POSTGRES_USER
       - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
       - POSTGRES_DB=$POSTGRES_DB
-      - GSCHOLAR_TABLE=$GSCHOLAR_TABLE
+      - ARXIV_TABLE=$ARXIV_TABLE
 
   scraper:
     build:
       context: .
       dockerfile: "./docker/rag_api/Dockerfile"
-    entrypoint: ["bash", "-c", "~/.pyenv/shims/python /workflow/scripts/gscholar_scraper.py"]
+    entrypoint: ["bash", "-c", "~/.pyenv/shims/python /workflow/scripts/arxiv_scraper.py"]
     image: rag_api
     container_name: scraper
     volumes:
@@ -50,7 +50,7 @@ services:
       - POSTGRES_USER=$POSTGRES_USER
       - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
       - POSTGRES_DB=$POSTGRES_DB
-      - GSCHOLAR_TABLE=$GSCHOLAR_TABLE
+      - ARXIV_TABLE=$ARXIV_TABLE
     depends_on:
       - pgvector
 
@@ -70,7 +70,7 @@ services:
       - POSTGRES_USER=$POSTGRES_USER
       - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
       - POSTGRES_DB=$POSTGRES_DB
-      - GSCHOLAR_TABLE=$GSCHOLAR_TABLE
+      - ARXIV_TABLE=$ARXIV_TABLE
     depends_on:
       - pgvector
 

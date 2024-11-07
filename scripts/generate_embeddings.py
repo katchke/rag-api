@@ -5,6 +5,7 @@ import psycopg2
 import tiktoken
 
 import helper
+import utils
 
 
 def create_db_cursor() -> tuple:
