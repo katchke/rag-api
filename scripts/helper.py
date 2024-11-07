@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 
 import psycopg2
@@ -13,6 +14,7 @@ class ResearchPaper:
         link: str,
         authors: str,
         content: str = "",
+        chunk_num: Optional[int] = None,
     ) -> None:
         """
         Initializes a new instance of the class.
@@ -27,6 +29,7 @@ class ResearchPaper:
         self.link = link
         self.authors = authors
         self.content = content
+        self.chunk_num = chunk_num
 
 
 def insert_papers_to_db(papers: list[ResearchPaper]):

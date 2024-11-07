@@ -2,7 +2,6 @@ import os
 
 from openai import OpenAI
 import psycopg2
-import tiktoken
 
 import helper
 import utils
@@ -18,7 +17,7 @@ def create_db_cursor() -> tuple:
     if not TABLE_NAME:
         raise ValueError("Table name not found in environment variables")
 
-    cur.execute(f"SELECT title, link, authors, content FROM {TABLE_NAME};")
+    cur.execute(f"SELECT title, link, authors, content, chunk_num FROM {TABLE_NAME};")
 
     return conn, cur
 
@@ -28,30 +27,20 @@ def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]
 
     return [
         helper.ResearchPaper(
-            title=paper[0], link=paper[1], authors=paper[2], content=paper[3]
+            title=paper[0],
+            link=paper[1],
+            authors=paper[2],
+            content=paper[3],
+            chunk_num=paper[4],
         )
         for paper in cur_
     ]
 
 
-def truncate_docs(doc: str) -> str:
-    enc = tiktoken.get_encoding("cl100k_base")
-    encodings = enc.encode(doc)
-
-    if len(encodings) < 8100:
-        return doc
-    else:
-        key = enc.decode(encodings[8000:8100])
-        return doc[: doc.index(key)]
-
-
 def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    docs = [
-        truncate_docs(f"{paper.title} {paper.authors} {paper.content}")
-        for paper in papers
-    ]
+    docs = [f"{paper.title} {paper.authors} {paper.content}" for paper in papers]
 
     resp = client.embeddings.create(
         model="text-embedding-3-small",
@@ -74,8 +63,8 @@ def update_papers(
 
     for paper, embed in zip(papers, embeds):
         cur.execute(
-            f"UPDATE {TABLE_NAME} SET embedding = %s WHERE link = %s",
-            (embed, paper.link),
+            f"UPDATE {TABLE_NAME} SET embedding = %s WHERE link = %s and chunk_num = %s;",
+            (embed, paper.link, paper.chunk_num),
         )
 
 
