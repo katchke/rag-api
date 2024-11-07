@@ -18,9 +18,7 @@ def create_db_cursor() -> tuple:
     if not TABLE_NAME:
         raise ValueError("Table name not found in environment variables")
 
-    cur.execute(
-        f"SELECT title, link, authors, content FROM {TABLE_NAME} ORDER BY citation_count DESC;"
-    )
+    cur.execute(f"SELECT title, link, authors, content FROM {TABLE_NAME};")
 
     return conn, cur
 
@@ -112,4 +110,14 @@ def main():
 
 
 if __name__ == "__main__":
+    # os.environ["RUN_EMBED_GEN"] = "true"
+    # os.environ["POSTGRES_HOST"] = "127.0.0.1"
+    # os.environ["POSTGRES_DB"] = "lithium_ion_content"
+    # os.environ["POSTGRES_USER"] = "postgres"
+    # os.environ["POSTGRES_PASSWORD"] = "password"
+    # os.environ["GSCHOLAR_TABLE"] = "gscholar"
+    # os.environ["POSTGRES_HOST"] = "127.0.0.1"
+    # os.environ["OPENAI_API_KEY"] = (
+    #     "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"
+    # )
     main()
