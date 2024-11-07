@@ -23,7 +23,10 @@ def create_db_cursor() -> tuple:
 
 
 def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]:
-    cur_ = cur.fetchmany(chunksize) if not debug else cur.fetchmany(5)
+    try:
+        cur_ = cur.fetchmany(chunksize) if not debug else cur.fetchmany(5)
+    except psycopg2.ProgrammingError:
+        return []
 
     return [
         helper.ResearchPaper(
@@ -86,12 +89,17 @@ def main():
 
     while True:
         papers = fetch_papers(cur, chunksize=CHUNKSIZE, debug=DEBUG)
+
+        if not papers:
+            print("No more papers to process.")
+            break
+
         embeds = create_embeddings(papers)
 
         update_papers(cur, papers, embeds)
         conn.commit()
 
-        if not papers or DEBUG:
+        if DEBUG:
             break
 
     cur.close()
@@ -104,7 +112,7 @@ if __name__ == "__main__":
     # os.environ["POSTGRES_DB"] = "lithium_ion_content"
     # os.environ["POSTGRES_USER"] = "postgres"
     # os.environ["POSTGRES_PASSWORD"] = "password"
-    # os.environ["GSCHOLAR_TABLE"] = "gscholar"
+    # os.environ["ARXIV_TABLE"] = "arxiv"
     # os.environ["POSTGRES_HOST"] = "127.0.0.1"
     # os.environ["OPENAI_API_KEY"] = (
     #     "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"
