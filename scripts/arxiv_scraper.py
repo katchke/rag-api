@@ -216,7 +216,6 @@ class ArxivScraper(Scraper):
                 title=title,
                 link=link,
                 authors=authors_,
-                citation_count=-1,
             )
             for title, link, authors_ in zip(titles, links, authors)
             if link
@@ -260,7 +259,7 @@ def main():
     # Scrape papers metadata from google scholar
     print(f"Query: {QUERY}, Pages: {PAGES}")
     arxiv_scraper = ArxivScraper(query=QUERY, pages=PAGES)
-    papers = arxiv_scraper.scrape(max_processes=MAX_PROCESSES)
+    papers = arxiv_scraper.scrape(max_processes=MAX_PROCESSES)[:5]
     print(f"Done fetching paper metadata. Found {len(papers)} papers.")
 
     # Scrape content of papers

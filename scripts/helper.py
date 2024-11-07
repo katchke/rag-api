@@ -11,7 +11,6 @@ class ResearchPaper:
         self,
         title: str,
         link: str,
-        citation_count: int,
         authors: str,
         content: str = "",
     ) -> None:
@@ -21,13 +20,11 @@ class ResearchPaper:
         Args:
             title (str): The title of the article.
             link (str): The URL link to the article.
-            citation_count (int): The number of citations the article has received.
             authors (list[str]): A list of authors of the article.
             content (str): The content of the article.
         """
         self.title = title
         self.link = link
-        self.citation_count = citation_count
         self.authors = authors
         self.content = content
 
@@ -37,14 +34,14 @@ def insert_papers_to_db(papers: list[ResearchPaper]):
     conn = psycopg2.connect(utils.create_conn_string())
     cur = conn.cursor()
 
-    TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
+    TABLE_NAME = os.getenv("ARXIV_TABLE")
 
     if not TABLE_NAME:
         raise ValueError("Table name not found in environment variables")
 
     # Insert scanned papers into the database
     insert_query = f"""
-    INSERT INTO {TABLE_NAME} (title, link, citation_count, authors, content, chunk_num)
+    INSERT INTO {TABLE_NAME} (title, link, authors, content, chunk_num)
     VALUES %s;
     """
 
@@ -60,7 +57,7 @@ def insert_papers_to_db(papers: list[ResearchPaper]):
         ]
         data.extend(
             [
-                (paper.title, paper.link, paper.citation_count, paper.authors, chunk, i)
+                (paper.title, paper.link, paper.authors, chunk, i)
                 for i, chunk in enumerate(chunks)
             ]
         )
