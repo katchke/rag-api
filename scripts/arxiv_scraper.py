@@ -259,7 +259,7 @@ def main():
     # Scrape papers metadata from google scholar
     print(f"Query: {QUERY}, Pages: {PAGES}")
     arxiv_scraper = ArxivScraper(query=QUERY, pages=PAGES)
-    papers = arxiv_scraper.scrape(max_processes=MAX_PROCESSES)[:5]
+    papers = arxiv_scraper.scrape(max_processes=MAX_PROCESSES)
     print(f"Done fetching paper metadata. Found {len(papers)} papers.")
 
     # Scrape content of papers
