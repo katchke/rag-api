@@ -3,6 +3,7 @@ import time
 
 from openai import OpenAI
 import psycopg2
+import tiktoken
 
 import helper
 import utils
@@ -43,12 +44,26 @@ def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]
     ]
 
 
+def truncate_docs(doc: str) -> str:
+    enc = tiktoken.get_encoding("cl100k_base")
+    encodings = enc.encode(doc)
+
+    if len(encodings) < 8100:
+        return doc
+    else:
+        key = enc.decode(encodings[8000:8100])
+        return doc[: doc.index(key)]
+
+
 def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
     time.sleep(1)
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    docs = [f"{paper.title} {paper.authors} {paper.content}" for paper in papers]
+    docs = [
+        truncate_docs(f"{paper.title} {paper.authors} {paper.content}")
+        for paper in papers
+    ]
 
     resp = client.embeddings.create(
         model="text-embedding-3-small",
