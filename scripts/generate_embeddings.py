@@ -28,7 +28,7 @@ def create_db_cursor() -> tuple:
 
 def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]:
     try:
-        cur_ = cur.fetchmany(chunksize) if not debug else cur.fetchmany(5)
+        data = cur.fetchmany(chunksize) if not debug else cur.fetchmany(5)
     except psycopg2.ProgrammingError:
         return []
 
@@ -40,7 +40,7 @@ def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]
             content=paper[3],
             chunk_num=paper[4],
         )
-        for paper in cur_
+        for paper in data
     ]
 
 
@@ -51,8 +51,8 @@ def truncate_docs(doc: str) -> str:
     if len(encodings) < 8100:
         return doc
     else:
-        key = enc.decode(encodings[8000:8100])
-        return doc[: doc.index(key)]
+        doc_ = doc.split()
+        return truncate_docs(" ".join(doc_[: len(doc_) - 500]))
 
 
 def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
@@ -77,18 +77,23 @@ def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
 
 
 def update_papers(
-    cur, papers: list[helper.ResearchPaper], embeds: list[list[float]]
+    conn, papers: list[helper.ResearchPaper], embeds: list[list[float]]
 ) -> None:
+    cur = conn.cursor()
     TABLE_NAME = os.getenv("ARXIV_TABLE")
 
     if not TABLE_NAME:
         raise ValueError("Table name not found in environment variables")
 
-    for paper, embed in zip(papers, embeds):
-        cur.execute(
-            f"UPDATE {TABLE_NAME} SET embedding = %s WHERE link = %s and chunk_num = %s;",
-            (embed, paper.link, paper.chunk_num),
+    args_str = ",".join(
+        cur.mogrify("(%s, %s, %s)", (embed, paper.link, paper.chunk_num)).decode(
+            "utf-8"
         )
+        for paper, embed in zip(papers, embeds)
+    )
+    cur.execute(
+        f"UPDATE {TABLE_NAME} AS t SET embedding = v.embedding FROM (VALUES {args_str}) AS v(embedding, link, chunk_num) WHERE t.link = v.link AND t.chunk_num = v.chunk_num;"
+    )
 
 
 def main():
@@ -116,7 +121,7 @@ def main():
 
         embeds = create_embeddings(papers)
 
-        update_papers(cur, papers, embeds)
+        update_papers(conn, papers, embeds)
         conn.commit()
 
         if DEBUG:
