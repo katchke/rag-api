@@ -18,7 +18,9 @@ def create_db_cursor() -> tuple:
     if not TABLE_NAME:
         raise ValueError("Table name not found in environment variables")
 
-    cur.execute(f"SELECT title, link, authors, content, chunk_num FROM {TABLE_NAME};")
+    cur.execute(
+        f"SELECT title, link, authors, content, chunk_num FROM {TABLE_NAME} WHERE embedding IS NULL;"
+    )
 
     return conn, cur
 
@@ -86,7 +88,7 @@ def main():
         return
 
     DEBUG = False
-    CHUNKSIZE = 2048
+    CHUNKSIZE = 500
 
     conn, cur = create_db_cursor()
 
