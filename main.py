@@ -38,7 +38,8 @@ MAX_WORDS_IN_CONTEXT = 30000  # Maximum number of words in the context for OpenA
 SYSTEM_PROMPT = (
     "You are a helpful assistant named the Virtual Factory Platform."
     "You are designed to help users answer any questions they may have regarding lithium-ion batteries and related topics."
-    "Provide the most accurate and helpful response you can."
+    "Provide the most accurate response that you can. Use the provided documents as a reference but remember that each document "
+    "is only a small chunk from a larger research paper."
 )
 
 HTML_FORM = """
@@ -53,7 +54,6 @@ HTML_FORM = """
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    height: 100vh;
                     margin: 0;
                 }
                 .container {
@@ -64,6 +64,7 @@ HTML_FORM = """
                     text-align: center;
                     width: 800px;
                     text-align: justify;
+                    margin-top: 20px;
                 }
                 h1 {
                     text-align: center;
@@ -96,7 +97,6 @@ HTML_FORM = """
                     background-color: #f9f9f9;
                     padding: 10px;
                     border-radius: 4px;
-                    max-height: 200px;
                     overflow-y: scroll;
                     white-space: pre-wrap;
                 }
@@ -154,7 +154,7 @@ def retreive_relevant_docs(question_embed: list[float], n: int) -> list[str]:
 
     # Retrieve the top n most relevant documents based on the question embedding using cosine similarity
     cur.execute(
-        f"SELECT title, authors, content FROM {TABLE_NAME} ORDER BY embedding <#> '{question_embed}' LIMIT {n};"
+        f"SELECT title, authors, content FROM {TABLE_NAME} ORDER BY 1 - (embedding <=> '{question_embed}') DESC LIMIT {n};"
     )
     docs_ = cur.fetchall()
 
@@ -204,16 +204,16 @@ def post():
     question = request.form["user_input"]
     q_embed = get_embedding(question)
 
-    # Retrieve top 20 relevant documents based on the question embedding
+    # Retrieve top 5 relevant documents based on the question embedding
     docs = retreive_relevant_docs(q_embed, n=20)
 
     # Prepare the prompt
     user_prompt = (
-        "Relevant Documents: "
-        + '"""'
-        + '"""'.join(docs)
-        + '"""'
-        + f" \n\nQuestion: {question}"
+        "Relevant Documents which can be used for reference: "
+        + '"""<Start of document> '
+        + ' <End of document>""", """<Start of document> '.join(docs)
+        + ' <End of document>"""'
+        + f" \n\nQuestion asked by the user: {question}"
     )
 
     client = OpenAI(api_key=OPENAI_API_KEY)
