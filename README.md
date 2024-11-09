@@ -74,7 +74,7 @@ Certain decisions were made during this assignment to save time because of which
 
 - Research papers were obtained from Arxiv rather than Google Scholar to avoid getting banned by Google for scraping their website
 - The search "lithium ion" return approx. 750 papers on Arxiv. All of these were scraped and ingested into DB.
-- Avoided too much preprocessing to save time. The application can be further consumed by cleaning the research paper content (for eg: images, equations, citations and so on.)
+- Avoided too much preprocessing to save time. The application can be further improved by cleaning the research paper content (for eg: images, equations, citations and so on.)
 - The provided directory structure was changed to make codebase simpler for the assignment.
 - Testing with a higher number of documents and implementing scaling would have resulted in higher costs (eg: use of AWS, OpenAI credits etc.)
 
