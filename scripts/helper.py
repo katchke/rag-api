@@ -1,3 +1,16 @@
+"""
+This script provides a helper class and function to manage research papers and insert them into a PostgreSQL database.
+
+Classes:
+    ResearchPaper: A class representing a research paper with attributes such as title, link, 
+    authors, content, and chunk number.
+
+Functions:
+    insert_papers_to_db(papers: list[ResearchPaper]): Connects to a PostgreSQL database and 
+    inserts a list of ResearchPaper instances into a specified table.
+
+"""
+
 from typing import Optional
 import os
 
@@ -24,6 +37,7 @@ class ResearchPaper:
             link (str): The URL link to the article.
             authors (list[str]): A list of authors of the article.
             content (str): The content of the article.
+            chunk_num (int, optional): The chunk number of the content.
         """
         self.title = title
         self.link = link
@@ -33,7 +47,9 @@ class ResearchPaper:
 
 
 def insert_papers_to_db(papers: list[ResearchPaper]):
-    # Connect to the PostgreSQL database
+    """
+    Inserts a list of ResearchPaper instances into a PostgreSQL database.
+    """
     conn = psycopg2.connect(utils.create_conn_string())
     cur = conn.cursor()
 
@@ -50,7 +66,9 @@ def insert_papers_to_db(papers: list[ResearchPaper]):
 
     # Prepare data for insertion
     data = []
-    chunk_size = 1000
+    chunk_size = (
+        1000  # Split content into chunks of 1000 words for better embedding quality
+    )
 
     for paper in papers:
         tokens = paper.content.split()

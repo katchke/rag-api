@@ -1,3 +1,27 @@
+"""
+This module implements a Flask web application that serves as a Virtual Factory Platform for answering questions 
+related to lithium-ion batteries. 
+It integrates with OpenAI's API to generate responses based on relevant documents retrieved from a PostgreSQL database.
+
+Functions:
+- prepare_context(title: str, authors: str, content: str) -> str:
+    Prepares a context string from the given title, authors, and content of a document.
+    
+- retreive_relevant_docs(question_embed: list[float], n: int) -> list[str]:
+    Retrieves relevant documents from the PostgreSQL database based on the provided question embedding.
+    
+- get_embedding(question: str) -> list[float]:
+    Generates an embedding for the given question using OpenAI's API.
+    
+Routes:
+- @app.route("/", methods=["GET"]):
+    Renders the HTML form for user input.
+    
+- @app.route("/", methods=["POST"]):
+    Processes the user's question, retrieves relevant documents, generates a response using OpenAI's API, 
+    and renders the response.
+"""
+
 import os
 
 from flask import Flask, request, render_template_string
@@ -10,8 +34,12 @@ import utils
 app = Flask(__name__)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-MAX_WORDS_IN_CONTEXT = 30000
-SYSTEM_PROMPT = "You are a helpful assistant named the Virtual Factory Platform. You are designed to help users answer any questions they may have regarding lithium-ion batteries and related topics. Provide the most accurate and helpful response you can."
+MAX_WORDS_IN_CONTEXT = 30000  # Maximum number of words in the context for OpenAI API
+SYSTEM_PROMPT = (
+    "You are a helpful assistant named the Virtual Factory Platform."
+    "You are designed to help users answer any questions they may have regarding lithium-ion batteries and related topics."
+    "Provide the most accurate and helpful response you can."
+)
 
 HTML_FORM = """
     <!doctype html>
@@ -108,27 +136,35 @@ HTML_FORM = """
     """
 
 
-def prepare_context(title: str, authors: str, citation_count: int, content: str) -> str:
-    return f"Title of the paper:{title}, Authors of the paper: {authors}, Citation count of the paper: {citation_count}, Content of the paper: {content}"
+def prepare_context(title: str, authors: str, content: str) -> str:
+    """
+    Prepares a context string from the retrieved docs to be added to the prompt
+    """
+    return f"Title of the paper:{title}, Authors of the paper: {authors}, Content of the paper: {content}"
 
 
 def retreive_relevant_docs(question_embed: list[float], n: int) -> list[str]:
+    """
+    Retrieves relevant documents from the PostgreSQL database based on the provided question embedding.
+    """
     conn = psycopg2.connect(utils.create_conn_string())
     cur = conn.cursor()
 
-    TABLE_NAME = os.getenv("GSCHOLAR_TABLE")
+    TABLE_NAME = os.getenv("ARXIV_TABLE")
 
+    # Retrieve the top n most relevant documents based on the question embedding using cosine similarity
     cur.execute(
-        f"SELECT title, authors, citation_count, content FROM {TABLE_NAME} ORDER BY embedding <#> '{question_embed}' LIMIT {n};"
+        f"SELECT title, authors, content FROM {TABLE_NAME} ORDER BY embedding <#> '{question_embed}' LIMIT {n};"
     )
     docs_ = cur.fetchall()
 
+    # Prepare the context for each document upto the maximum word limit
     count_words = 0
     docs = []
 
     for doc in docs_:
-        title, authors, citation_count, content = doc
-        context_ = prepare_context(title, authors, citation_count, content)
+        title, authors, content = doc
+        context_ = prepare_context(title, authors, content)
 
         if count_words + len(context_.split(" ")) < MAX_WORDS_IN_CONTEXT:
             docs.append(context_)
@@ -143,6 +179,9 @@ def retreive_relevant_docs(question_embed: list[float], n: int) -> list[str]:
 
 
 def get_embedding(question: str) -> list[float]:
+    """
+    Generates an embedding for the given question
+    """
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     resp = client.embeddings.create(
@@ -161,10 +200,14 @@ def get():
 
 @app.route("/", methods=["POST"])
 def post():
+    # Get the user input question and generate the embedding
     question = request.form["user_input"]
     q_embed = get_embedding(question)
 
-    docs = retreive_relevant_docs(q_embed, n=5)
+    # Retrieve top 20 relevant documents based on the question embedding
+    docs = retreive_relevant_docs(q_embed, n=20)
+
+    # Prepare the prompt
     user_prompt = (
         "Relevant Documents: "
         + '"""'
@@ -181,6 +224,7 @@ def post():
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
+        temperature=0.0,  # No randomness
     )
     answer = resp.choices[0].message.content
 

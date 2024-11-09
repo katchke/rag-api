@@ -1,6 +1,5 @@
 .DS_Store
 .env
-db.sqlite3
 venv
 data
 __pycache__

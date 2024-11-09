@@ -2,6 +2,9 @@ import os
 
 
 def create_conn_string() -> str:
+    """
+    Creates a connection string for the PostgreSQL database
+    """
     return (
         "postgresql://"
         "%(POSTGRES_USER)s:%(POSTGRES_PASSWORD)s"

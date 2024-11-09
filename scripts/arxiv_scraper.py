@@ -1,3 +1,21 @@
+"""
+This script scrapes research paper metadata and content from Arxiv based on a specified query and number of pages.
+It uses multiprocessing to speed up the scraping process and stores the scraped data in a database.
+
+Classes:
+    Scraper: A base class for fetching web pages or PDF files.
+    PaperScraper: A class for scraping the content of research papers from their PDF links.
+    ArxivScraper: A class for scraping research paper metadata from Arxiv.
+
+Functions:
+    main: The main function that runs the scraper if the environment variable 'RUN_SCRAPER' is set to 'true'.
+
+Usage:
+    Set the environment variable 'RUN_SCRAPER=true' to run the scraper.
+    Modify the QUERY, PAGES, and MAX_PROCESSES variables in the main function to customize the scraping process.
+
+"""
+
 from typing import Optional, Union
 import os
 import re
@@ -16,6 +34,8 @@ import helper
 
 
 ARXIV_URL = "https://arxiv.org/search/?searchtype=all&query=lithium+ion+battery&abstracts=hide&size=200&order=&start={start}"
+
+# List of user agents to use for fetching web pages
 USER_AGENT_LIST = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/77.0",
@@ -39,9 +59,9 @@ class Scraper:
             url (str): The URL of the web page or PDF file to fetch.
             is_pdf (bool, optional): If True, fetches the content as a PDF file. Defaults to False.
 
-         Returns:
-            Optional[Union[str, io.BytesIO]]: The content of the web page as a string if is_pdf is False,
-                              otherwise the content as a BytesIO object.
+        Returns:
+            Optional[Union[str, io.BytesIO]]: The content of the web page as a string if `is_pdf` is False,
+                                              otherwise the content as an io.BytesIO object.
         """
 
         headers = {
@@ -52,6 +72,7 @@ class Scraper:
             "Connection": "keep-alive",
         }
 
+        # Add a random delay before fetching the page
         time.sleep(random.randint(10, 30) / 10)
 
         response = requests.get(url, headers=headers)
@@ -78,7 +99,7 @@ class PaperScraper(Scraper):
 
     def _fetch_paper_content(self, paper: helper.ResearchPaper) -> helper.ResearchPaper:
         """
-        Fetches the content of a research paper from its PDF link and updates the paper object with the extracted text.
+        Fetches the content of a research paper from its PDF link.
 
         Args:
             paper (ResearchPaper): The research paper object containing the link to the PDF.
@@ -133,13 +154,13 @@ class ArxivScraper(Scraper):
 
     def _generate_urls(self) -> list[str]:
         """
-        Generates a list of URLs for Google Scholar search results based on the query and number of pages.
+        Generates a list of URLs containing the search results based on the query and number of pages.
 
         Returns:
-            list[str]: A list of URLs for the Google Scholar search results.
+            list[str]: A list of URLs containing the search results.
         """
 
-        # Assuming that google scholar will usually 10 search results for every request
+        # We will fetch 200 results at a time
         urls = [
             self.base_url.format(start=200 * i, query=self.query)
             for i in range(self.pages)
@@ -252,8 +273,9 @@ def main():
     print("Running Google Scholar scraper...")
     QUERY = "lithium+ion"  # Query to search
     PAGES = 4  # Number of pages to scrape
-    MAX_PROCESSES = 1  # Number of processes to use for scraping
+    MAX_PROCESSES = 2  # Number of processes to use for scraping
 
+    # Number of papers to insert into the database in each batch
     DB_INSERT_CHUNK = 100
 
     # Scrape papers metadata from google scholar

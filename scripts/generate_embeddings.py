@@ -1,3 +1,27 @@
+"""
+This script generates embeddings for research papers stored in a PostgreSQL database.
+It fetches papers without embeddings, creates embeddings using OpenAI's API, and updates the database with 
+the generated embeddings.
+
+Functions:
+- create_db_cursor: Connects to the PostgreSQL database and retrieves papers without embeddings.
+- fetch_papers: Fetches a specified number of research papers from the database.
+- truncate_docs: Truncates document content to fit within token limits for embedding generation.
+- create_embeddings: Generates embeddings for a list of research papers using OpenAI's API.
+- update_papers: Updates the database with the generated embeddings for the corresponding papers.
+- main: Main function to control the flow of the script, including fetching papers, generating embeddings, 
+and updating the database.
+
+Environment Variables:
+- RUN_EMBED_GEN: Flag to control whether the embedding generation process should run.
+- POSTGRES_HOST: Host address of the PostgreSQL database.
+- POSTGRES_DB: Name of the PostgreSQL database.
+- POSTGRES_USER: Username for the PostgreSQL database.
+- POSTGRES_PASSWORD: Password for the PostgreSQL database.
+- ARXIV_TABLE: Name of the table containing research papers.
+- OPENAI_API_KEY: API key for accessing OpenAI's services.
+"""
+
 import os
 import time
 
@@ -10,7 +34,9 @@ import utils
 
 
 def create_db_cursor() -> tuple:
-    # Connect to the PostgreSQL database
+    """
+    Connects to the PostgreSQL database and retrieves papers without embeddings.
+    """
     conn = psycopg2.connect(utils.create_conn_string())
     cur = conn.cursor()
 
@@ -27,6 +53,9 @@ def create_db_cursor() -> tuple:
 
 
 def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]:
+    """
+    Fetches a specified number of research papers from the database.
+    """
     try:
         data = cur.fetchmany(chunksize) if not debug else cur.fetchmany(5)
     except psycopg2.ProgrammingError:
@@ -45,6 +74,9 @@ def fetch_papers(cur, chunksize: int, debug: bool) -> list[helper.ResearchPaper]
 
 
 def truncate_docs(doc: str) -> str:
+    """
+    Truncates document content to fit within token limits for embedding generation.
+    """
     enc = tiktoken.get_encoding("cl100k_base")
     encodings = enc.encode(doc)
 
@@ -52,10 +84,14 @@ def truncate_docs(doc: str) -> str:
         return doc
     else:
         doc_ = doc.split()
+        # Keep removing words until the length is less than 8100 tokens
         return truncate_docs(" ".join(doc_[: len(doc_) - 500]))
 
 
 def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
+    """
+    Generates embeddings for a list of research papers using OpenAI's API.
+    """
     time.sleep(1)
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -79,6 +115,9 @@ def create_embeddings(papers: list[helper.ResearchPaper]) -> list[list[float]]:
 def update_papers(
     conn, papers: list[helper.ResearchPaper], embeds: list[list[float]]
 ) -> None:
+    """
+    Updates the database with the generated embeddings for the corresponding papers.
+    """
     cur = conn.cursor()
     TABLE_NAME = os.getenv("ARXIV_TABLE")
 
@@ -107,11 +146,12 @@ def main():
         )
         return
 
-    DEBUG = False
-    CHUNKSIZE = 500
+    DEBUG = False  # Set to True for running on a small subset of data
+    CHUNKSIZE = 500  # Number of papers to process in each iteration
 
     conn, cur = create_db_cursor()
 
+    # Process papers in chunks till all papers are processed
     while True:
         papers = fetch_papers(cur, chunksize=CHUNKSIZE, debug=DEBUG)
 
@@ -132,14 +172,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # os.environ["RUN_EMBED_GEN"] = "true"
-    # os.environ["POSTGRES_HOST"] = "127.0.0.1"
-    # os.environ["POSTGRES_DB"] = "lithium_ion_content"
-    # os.environ["POSTGRES_USER"] = "postgres"
-    # os.environ["POSTGRES_PASSWORD"] = "password"
-    # os.environ["ARXIV_TABLE"] = "arxiv"
-    # os.environ["POSTGRES_HOST"] = "127.0.0.1"
-    # os.environ["OPENAI_API_KEY"] = (
-    #     "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"
-    # )
     main()

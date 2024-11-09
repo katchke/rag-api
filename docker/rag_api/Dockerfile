@@ -73,5 +73,4 @@ RUN mkdir -p /var/log/rag-api && chown $USERNAME:$GROUPNAME /var/log/rag-api
 USER $USERNAME
 
 WORKDIR $APP_ROOT
-#ENTRYPOINT ["/tini", "--"]
 CMD ["bash", "-c", "~/.pyenv/shims/python main.py"]
