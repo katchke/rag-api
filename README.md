@@ -1,6 +1,6 @@
 # Virtual Factory Platform
 
-This project is a RAG (Retrieval-Augmented Generation) based Q&A system designed to answer questions related to lithium-ion batteries. It consists of scripts to: 1) scrape Arxiv (https://arxiv.org) for research papers and 2) to generate embeddings for the research papers using OpenAI embeddings. The data and the embeddings are stored in Postgres DB (with the vector extension enabled). It also consists of a Flask application which accepts a question from the user and provides a suitable response using RAG.
+This mini-project is a simple RAG (Retrieval-Augmented Generation) based Q&A system designed to answer questions related to lithium-ion batteries. It consists of scripts to: 1) scrape Arxiv (https://arxiv.org) for research papers and 2) to generate embeddings for the research papers using OpenAI embeddings. The data and the embeddings are stored in Postgres DB (with the vector extension enabled). It also consists of a Flask application which accepts a question from the user and provides a suitable response using RAG.
 
 **Arxiv Scraper**
 
@@ -70,12 +70,7 @@ POSTGRES_HOST=pgvector POSTGRES_DB=lithium_ion_content ARXIV_TABLE=arxiv POSTGRE
 
 
 ## Decisions
-Certain decisions were made during this assignment to save time because of which the final solution deviates slightly from the assigned problem statement. 
-
-- Research papers were obtained from Arxiv rather than Google Scholar to avoid getting banned by Google for scraping their website
-    - The search "lithium ion" returns approx. 750 papers on Arxiv. All of these were scraped and ingested into DB.
 - Avoided too much preprocessing to reduce implementation time. The application can be further improved by cleaning the research paper content (for eg: images, equations, citations and so on.)
-- The provided directory structure was changed to make the codebase simpler for the assignment.
 - Tested with 750 papers scraped from Arxiv. Testing with a higher number of documents and implementing scaling would have resulted in higher costs (eg: use of AWS, OpenAI credits etc.)
 
 
